@@ -1,0 +1,70 @@
+name: Import Quaternius Dinosaur Kit
+on:
+  push:
+    paths:
+      - '.github/workflows/import-dino-kit.yml'
+      - 'scripts/export_glb.py'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: dinosaur-kit-import
+  cancel-in-progress: false
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Blender 4.2 LTS and downloader
+        run: |
+          set -euo pipefail
+          python -m pip install --quiet gdown==5.2.0
+          curl --fail --location --retry 3 https://download.blender.org/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
+          mkdir -p "$RUNNER_TEMP/blender"
+          tar -xJf "$RUNNER_TEMP/blender.tar.xz" --strip-components=1 -C "$RUNNER_TEMP/blender"
+          "$RUNNER_TEMP/blender/blender" --version
+      - name: Download original Blender sources and licence
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/source"
+          cd "$RUNNER_TEMP/source"
+          gdown 1plWInE0CHcgDVzbGpEpyVGuxh_0OaX3w -O TRex.blend
+          gdown 1pxvaW89pkg8tiXoqnCKiuw-BJzhZzBxK -O Triceratops.blend
+          gdown 1mRVzt_zhZC_JsGoMvyIsRlGU5bMw7ccS -O Stegosaurus.blend
+          gdown 1AEi5TIV0A6VdLUqTuKBNCRUYiyahltJE -O Velociraptor.blend
+          gdown 1tFaNVLGJOzW3lLQsQ6u-6M6IiJRUpyoJ -O Apatosaurus.blend
+          gdown 1qVPzIPDSQoeO0ZYpEB9_33KKIzpFXq6j -O Parasaurolophus.blend
+          gdown 1XSnL5PPEEVuZFZbW9m6fKbU4AUVAfyfY -O License.txt
+          grep -q 'CC0 1.0' License.txt
+      - name: Convert and verify each GLB
+        run: |
+          set -euo pipefail
+          mkdir -p models
+          for name in TRex Triceratops Stegosaurus Velociraptor Apatosaurus Parasaurolophus; do
+            "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$RUNNER_TEMP/source/$name.blend" --python-exit-code 1 --python scripts/export_glb.py -- "models/$name.glb"
+          done
+          cp "$RUNNER_TEMP/source/License.txt" LICENSE.txt
+          python - <<'PY'
+          import json, pathlib
+          names = ('TRex', 'Triceratops', 'Stegosaurus', 'Velociraptor', 'Apatosaurus', 'Parasaurolophus')
+          root = pathlib.Path('models')
+          assets = {}
+          for name in names:
+              meta = root / (name + '.json')
+              item = json.loads(meta.read_text())
+              assert item['file'] == 'models/' + name + '.glb'
+              assert pathlib.Path(item['file']).stat().st_size == item['bytes']
+              assets[name] = item
+              meta.unlink()
+          manifest = {'schemaVersion': 1, 'count': len(assets), 'assets': assets}
+          pathlib.Path('manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+      - name: Publish candidates to main (no release tag)
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add models manifest.json LICENSE.txt
+          git diff --cached --quiet || git commit -m "Publish validated dinosaur GLB candidates for visual review"
+          git push origin HEAD:main
