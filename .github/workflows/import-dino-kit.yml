@@ -1,9 +1,9 @@
-name: Dinosaur Kit Run 1 diagnostics only
+name: Dinosaur Kit Run 1B diagnostics only
 on:
   workflow_dispatch:
     inputs:
       approval:
-        description: 'Enter RUN1-APPROVED only after Tab B and Cameron approve the exact files'
+        description: 'Enter RUN1B-APPROVED only after Tab B and Cameron approve the exact files'
         required: true
         type: string
 permissions:
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   diagnose:
-    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN1-APPROVED' && github.run_attempt == 1
+    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN1B-APPROVED' && github.run_attempt == 1
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -25,29 +25,21 @@ jobs:
           set -euo pipefail
           mkdir -p diagnostics
           git rev-parse HEAD | tee diagnostics/commit.txt
-          python -m pip install --quiet gdown==5.2.0
           curl --fail --location --retry 3 https://download.blender.org/release/Blender4.2/blender-4.2.8-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
           mkdir -p "$RUNNER_TEMP/blender"
           tar -xJf "$RUNNER_TEMP/blender.tar.xz" --strip-components=1 -C "$RUNNER_TEMP/blender"
           "$RUNNER_TEMP/blender/blender" --version | tee diagnostics/blender-version.txt
-      - name: Download exact source files and licence
+      - name: Verify exact local source files and licence
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/source"
-          cd "$RUNNER_TEMP/source"
-          status=0
-          fetch() { gdown "$1" -O "$2" || { status=1; echo "Download failed: $2"; }; }
-          fetch 1plWInE0CHcgDVzbGpEpyVGuxh_0OaX3w TRex.blend
-          fetch 1pxvaW89pkg8tiXoqnCKiuw-BJzhZzBxK Triceratops.blend
-          fetch 1mRVzt_zhZC_JsGoMvyIsRlGU5bMw7ccS Stegosaurus.blend
-          fetch 1AEi5TIV0A6VdLUqTuKBNCRUYiyahltJE Velociraptor.blend
-          fetch 1tFaNVLGJOzW3lLQsQ6u-6M6IiJRUpyoJ Apatosaurus.blend
-          fetch 1qVPzIPDSQoeO0ZYpEB9_33KKIzpFXq6j Parasaurolophus.blend
-          fetch 1XSnL5PPEEVuZFZbW9m6fKbU4AUVAfyfY License.txt
-          ls -la | tee "$GITHUB_WORKSPACE/diagnostics/source-list.txt"
-          if ! grep -q 'CC0 1.0' License.txt; then status=1; fi
+          status=1
           echo "$status" > "$GITHUB_WORKSPACE/diagnostics/download-status.txt"
-          # Continue collecting diagnostics for available sources; final gate fails.
+          cd "$GITHUB_WORKSPACE/sources"
+          ls -la | tee "$GITHUB_WORKSPACE/diagnostics/source-list.txt"
+          test "$(wc -l < SHA256SUMS)" -eq 7
+          sha256sum -c SHA256SUMS
+          grep -q 'CC0 1.0' License.txt
+          echo 0 > "$GITHUB_WORKSPACE/diagnostics/download-status.txt"
       - name: Diagnose every species in Blender
         run: |
           set -euo pipefail
@@ -55,7 +47,7 @@ jobs:
           for name in TRex Triceratops Stegosaurus Velociraptor Apatosaurus Parasaurolophus; do
             mkdir -p "diagnostics/$name"
             echo "=== $name ==="
-            if test -s "$RUNNER_TEMP/source/$name.blend" && "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$RUNNER_TEMP/source/$name.blend" --python-exit-code 1 --python scripts/diagnose_glb.py -- "diagnostics/$name" 2>&1 | tee "diagnostics/$name/blender.log"; then
+            if test -s "$GITHUB_WORKSPACE/sources/$name.blend" && "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$GITHUB_WORKSPACE/sources/$name.blend" --python-exit-code 1 --python scripts/diagnose_glb.py -- "diagnostics/$name" 2>&1 | tee "diagnostics/$name/blender.log"; then
               echo 0 > "diagnostics/$name/blender-status.txt"
             else
               echo 1 > "diagnostics/$name/blender-status.txt"
@@ -81,7 +73,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dinosaur-kit-run1-diagnostics
+          name: dinosaur-kit-run1b-diagnostics
           path: diagnostics/
           if-no-files-found: error
           retention-days: 14
