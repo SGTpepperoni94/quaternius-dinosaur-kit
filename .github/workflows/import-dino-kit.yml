@@ -1,70 +1,96 @@
-name: Import Quaternius Dinosaur Kit
+name: Dinosaur Kit Run 1 diagnostics only
 on:
-  push:
-    paths:
-      - '.github/workflows/import-dino-kit.yml'
-      - 'scripts/export_glb.py'
   workflow_dispatch:
+    inputs:
+      approval:
+        description: 'Enter RUN1-APPROVED only after Tab B and Cameron approve the exact files'
+        required: true
+        type: string
 permissions:
-  contents: write
+  contents: read
 concurrency:
-  group: dinosaur-kit-import
+  group: dinosaur-kit-run1-diagnostic
   cancel-in-progress: false
 jobs:
-  import:
-    runs-on: ubuntu-latest
+  diagnose:
+    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN1-APPROVED' && github.run_attempt == 1
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Install Blender 4.2 LTS and downloader
+        with:
+          persist-credentials: false
+      - name: Record exact revision and setup
         run: |
           set -euo pipefail
+          mkdir -p diagnostics
+          git rev-parse HEAD | tee diagnostics/commit.txt
           python -m pip install --quiet gdown==5.2.0
-          curl --fail --location --retry 3 https://download.blender.org/release/Blender4.2/blender-4.2.0-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
+          curl --fail --location --retry 3 https://download.blender.org/release/Blender4.2/blender-4.2.8-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
           mkdir -p "$RUNNER_TEMP/blender"
           tar -xJf "$RUNNER_TEMP/blender.tar.xz" --strip-components=1 -C "$RUNNER_TEMP/blender"
-          "$RUNNER_TEMP/blender/blender" --version
-      - name: Download original Blender sources and licence
+          "$RUNNER_TEMP/blender/blender" --version | tee diagnostics/blender-version.txt
+      - name: Download exact source files and licence
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/source"
           cd "$RUNNER_TEMP/source"
-          gdown 1plWInE0CHcgDVzbGpEpyVGuxh_0OaX3w -O TRex.blend
-          gdown 1pxvaW89pkg8tiXoqnCKiuw-BJzhZzBxK -O Triceratops.blend
-          gdown 1mRVzt_zhZC_JsGoMvyIsRlGU5bMw7ccS -O Stegosaurus.blend
-          gdown 1AEi5TIV0A6VdLUqTuKBNCRUYiyahltJE -O Velociraptor.blend
-          gdown 1tFaNVLGJOzW3lLQsQ6u-6M6IiJRUpyoJ -O Apatosaurus.blend
-          gdown 1qVPzIPDSQoeO0ZYpEB9_33KKIzpFXq6j -O Parasaurolophus.blend
-          gdown 1XSnL5PPEEVuZFZbW9m6fKbU4AUVAfyfY -O License.txt
-          grep -q 'CC0 1.0' License.txt
-      - name: Convert and verify each GLB
+          status=0
+          fetch() { gdown "$1" -O "$2" || { status=1; echo "Download failed: $2"; }; }
+          fetch 1plWInE0CHcgDVzbGpEpyVGuxh_0OaX3w TRex.blend
+          fetch 1pxvaW89pkg8tiXoqnCKiuw-BJzhZzBxK Triceratops.blend
+          fetch 1mRVzt_zhZC_JsGoMvyIsRlGU5bMw7ccS Stegosaurus.blend
+          fetch 1AEi5TIV0A6VdLUqTuKBNCRUYiyahltJE Velociraptor.blend
+          fetch 1tFaNVLGJOzW3lLQsQ6u-6M6IiJRUpyoJ Apatosaurus.blend
+          fetch 1qVPzIPDSQoeO0ZYpEB9_33KKIzpFXq6j Parasaurolophus.blend
+          fetch 1XSnL5PPEEVuZFZbW9m6fKbU4AUVAfyfY License.txt
+          ls -la | tee "$GITHUB_WORKSPACE/diagnostics/source-list.txt"
+          if ! grep -q 'CC0 1.0' License.txt; then status=1; fi
+          echo "$status" > "$GITHUB_WORKSPACE/diagnostics/download-status.txt"
+          # Continue collecting diagnostics for available sources; final gate fails.
+      - name: Diagnose every species in Blender
         run: |
           set -euo pipefail
-          mkdir -p models
+          status=0
           for name in TRex Triceratops Stegosaurus Velociraptor Apatosaurus Parasaurolophus; do
-            "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$RUNNER_TEMP/source/$name.blend" --python-exit-code 1 --python scripts/export_glb.py -- "models/$name.glb"
+            mkdir -p "diagnostics/$name"
+            echo "=== $name ==="
+            if test -s "$RUNNER_TEMP/source/$name.blend" && "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$RUNNER_TEMP/source/$name.blend" --python-exit-code 1 --python scripts/diagnose_glb.py -- "diagnostics/$name" 2>&1 | tee "diagnostics/$name/blender.log"; then
+              echo 0 > "diagnostics/$name/blender-status.txt"
+            else
+              echo 1 > "diagnostics/$name/blender-status.txt"
+              status=1
+            fi
           done
-          cp "$RUNNER_TEMP/source/License.txt" LICENSE.txt
-          python - <<'PY'
-          import json, pathlib
-          names = ('TRex', 'Triceratops', 'Stegosaurus', 'Velociraptor', 'Apatosaurus', 'Parasaurolophus')
-          root = pathlib.Path('models')
-          assets = {}
-          for name in names:
-              meta = root / (name + '.json')
-              item = json.loads(meta.read_text())
-              assert item['file'] == 'models/' + name + '.glb'
-              assert pathlib.Path(item['file']).stat().st_size == item['bytes']
-              assets[name] = item
-              meta.unlink()
-          manifest = {'schemaVersion': 1, 'count': len(assets), 'assets': assets}
-          pathlib.Path('manifest.json').write_text(json.dumps(manifest, indent=2) + '\n')
-          PY
-      - name: Publish candidates to main (no release tag)
+          echo "$status" > diagnostics/blender-status.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned runtime dependencies
         run: |
           set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add models manifest.json LICENSE.txt
-          git diff --cached --quiet || git commit -m "Publish validated dinosaur GLB candidates for visual review"
-          git push origin HEAD:main
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx --no-install playwright-core install --with-deps chromium
+      - name: Diagnose GLBs in Three.js and Khronos validator
+        run: |
+          set -euo pipefail
+          status=0
+          node scripts/diagnose_runtime.mjs diagnostics 2>&1 | tee diagnostics/runtime.log || status=1
+          echo "$status" > diagnostics/runtime-status.txt
+      - name: Preserve raw diagnostic artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dinosaur-kit-run1-diagnostics
+          path: diagnostics/
+          if-no-files-found: error
+          retention-days: 14
+      # Expected to exit 1 if original assertion / raw bounds fail, after artifacts are preserved.
+      - name: Consolidated failure gate
+        if: always()
+        run: |
+          set -euo pipefail
+          for f in download-status blender-status runtime-status; do
+            test -f "diagnostics/$f.txt" && test "$(cat "diagnostics/$f.txt")" = 0 || exit 1
+          done
+          test -f diagnostics/runtime.json
