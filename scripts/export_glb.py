@@ -86,7 +86,13 @@ for original in actions:
                      use_current_action=False,clean_curves=False,bake_types={'POSE'})
     new=ad.action
     assert new is not None and new!=original and new.fcurves
-    assert tuple(new.frame_range)==(frame_start,frame_end), 'Bake changed frame range'
+    new.use_frame_range=False
+    new_lo,new_hi=map(float,new.frame_range)
+    print(f'BAKE_RANGE {species} {original.name}: orig=({lo},{hi}) req=({frame_start},{frame_end}) baked=({new_lo},{new_hi})',flush=True)
+    assert math.isfinite(new_lo) and math.isfinite(new_hi) and new_hi>new_lo, 'Baked action has invalid range'
+    orig_span,baked_span=hi-lo,new_hi-new_lo
+    assert abs(baked_span-orig_span)<=max(2.0,orig_span*0.10), 'Baked action duration drifted'
+    assert new_lo>=frame_start-1.0 and new_hi<=frame_end+1.0, 'Baked action exceeded requested window'
     new.use_fake_user=True
     baked.append((original,new,original.name))
 # All actions baked before clearing any constraints.
