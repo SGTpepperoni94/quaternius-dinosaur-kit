@@ -1,0 +1,14 @@
+{
+  "dependencies": {
+    "gltf-validator": "2.0.0-dev.3.10",
+    "playwright-core": "1.51.1",
+    "three": "0.187.0"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "name": "dino-kit-run1-diagnostics",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0"
+}
