@@ -1,0 +1,309 @@
+{
+  "scaling": "native-quaternius",
+  "models": {
+    "TRex": {
+      "file": "models/TRex.glb",
+      "triangleCount": 1820,
+      "nativeWidthHeightDepth": [
+        7.953674328178424,
+        15.224998192269645,
+        31.02957613787072
+      ],
+      "sourceNativeWidthHeightDepth": [
+        7.953674554824829,
+        15.22499865014106,
+        31.029576301574707
+      ],
+      "height": 15.224998329445654,
+      "bounds": {
+        "min": [
+          -3.976837396621704,
+          1.4467543962837226e-7,
+          -16.60175132751465
+        ],
+        "max": [
+          3.976836681365967,
+          15.224998474121094,
+          14.427824020385742
+        ]
+      },
+      "animations": [
+        "TRex_Attack",
+        "TRex_Death",
+        "TRex_Idle",
+        "TRex_Jump",
+        "TRex_Run",
+        "TRex_Walk"
+      ],
+      "sourceActions": [
+        "TRex_Attack",
+        "TRex_Death",
+        "TRex_Idle",
+        "TRex_Jump",
+        "TRex_Run",
+        "TRex_Walk"
+      ],
+      "materialFixes": [
+        "Red",
+        "LightYellow",
+        "LightGreen",
+        "Green",
+        "Black"
+      ],
+      "sha256": "421ae175e5e4073684d03d68dc1f0c5f7ce8d902dc3b284f8295af21bcfc1846",
+      "bytes": 379192
+    },
+    "Triceratops": {
+      "file": "models/Triceratops.glb",
+      "triangleCount": 1334,
+      "nativeWidthHeightDepth": [
+        5.844102732086529,
+        9.432512473517411,
+        20.34058465517505
+      ],
+      "sourceNativeWidthHeightDepth": [
+        5.8441033363342285,
+        9.432513415813446,
+        20.34058666229248
+      ],
+      "height": 9.432510317590143,
+      "bounds": {
+        "min": [
+          -2.922050952911377,
+          5.838641925492993e-8,
+          -11.331485748291016
+        ],
+        "max": [
+          2.9220519065856934,
+          9.432510375976562,
+          9.00909423828125
+        ]
+      },
+      "animations": [
+        "Triceratops_Attack",
+        "Triceratops_Death",
+        "Triceratops_Idle",
+        "Triceratops_Jump",
+        "Triceratops_Run",
+        "Triceratops_Walk"
+      ],
+      "sourceActions": [
+        "Triceratops_Attack",
+        "Triceratops_Death",
+        "Triceratops_Idle",
+        "Triceratops_Jump",
+        "Triceratops_Run",
+        "Triceratops_Walk"
+      ],
+      "materialFixes": [
+        "Brown",
+        "LightBrown",
+        "Purple"
+      ],
+      "sha256": "c9a2bd640c2ad19ad39e9b9ab8780ad5e222ae4511fa7fd7eb4484b7fc332b83",
+      "bytes": 363352
+    },
+    "Stegosaurus": {
+      "file": "models/Stegosaurus.glb",
+      "triangleCount": 2290,
+      "nativeWidthHeightDepth": [
+        4.706379222863091,
+        10.616360639388624,
+        23.05349515926889
+      ],
+      "sourceNativeWidthHeightDepth": [
+        4.706379413604736,
+        10.616360798478127,
+        23.05349349975586
+      ],
+      "height": 10.616361522745024,
+      "bounds": {
+        "min": [
+          -2.353189468383789,
+          9.529696853860514e-8,
+          -15.377403259277344
+        ],
+        "max": [
+          2.35318922996521,
+          10.616361618041992,
+          7.676092147827148
+        ]
+      },
+      "animations": [
+        "Stegosaurus_Attack",
+        "Stegosaurus_Death",
+        "Stegosaurus_Idle",
+        "Stegosaurus_Jump",
+        "Stegosaurus_Run",
+        "Stegosaurus_Walk"
+      ],
+      "sourceActions": [
+        "Stegosaurus_Attack",
+        "Stegosaurus_Death",
+        "Stegosaurus_Idle",
+        "Stegosaurus_Jump",
+        "Stegosaurus_Run",
+        "Stegosaurus_Walk"
+      ],
+      "materialFixes": [
+        "Brown",
+        "LightBrown",
+        "DarkBrown"
+      ],
+      "sha256": "3d39974453741ddf1596c449724c257f177d7e33ea768daad75b9c098e65f6b8",
+      "bytes": 460064
+    },
+    "Velociraptor": {
+      "file": "models/Velociraptor.glb",
+      "triangleCount": 1248,
+      "nativeWidthHeightDepth": [
+        2.635786817868298,
+        5.51381001978363,
+        13.276308094039404
+      ],
+      "sourceNativeWidthHeightDepth": [
+        2.635786771774292,
+        5.513809580355883,
+        13.27630615234375
+      ],
+      "height": 5.513811058468967,
+      "bounds": {
+        "min": [
+          -1.317893385887146,
+          5.29812282934472e-8,
+          -8.112205505371094
+        ],
+        "max": [
+          1.317893385887146,
+          5.513811111450195,
+          5.16410493850708
+        ]
+      },
+      "animations": [
+        "Velociraptor_Attack",
+        "Velociraptor_Death",
+        "Velociraptor_Idle",
+        "Velociraptor_Jump",
+        "Velociraptor_Run",
+        "Velociraptor_Walk"
+      ],
+      "sourceActions": [
+        "Velociraptor_Attack",
+        "Velociraptor_Death",
+        "Velociraptor_Idle",
+        "Velociraptor_Jump",
+        "Velociraptor_Run",
+        "Velociraptor_Walk"
+      ],
+      "materialFixes": [
+        "LightBrown",
+        "Brown",
+        "Black"
+      ],
+      "sha256": "a3e818c4a6661930bdccf8426f691d3b92165763f3f35592edd70a2f7f1efe92",
+      "bytes": 335788
+    },
+    "Apatosaurus": {
+      "file": "models/Apatosaurus.glb",
+      "triangleCount": 1442,
+      "nativeWidthHeightDepth": [
+        5.613175954406238,
+        11.678447970491867,
+        49.7373845287639
+      ],
+      "sourceNativeWidthHeightDepth": [
+        5.613175868988037,
+        11.678450345993042,
+        49.737382888793945
+      ],
+      "height": 11.678444788696623,
+      "bounds": {
+        "min": [
+          -2.8065879344940186,
+          7.366909926531662e-8,
+          -26.57804298400879
+        ],
+        "max": [
+          2.8065876960754395,
+          11.678444862365723,
+          23.159353256225586
+        ]
+      },
+      "animations": [
+        "Apatosaurus_Attack",
+        "Apatosaurus_Death",
+        "Apatosaurus_Idle",
+        "Apatosaurus_Jump",
+        "Apatosaurus_Run",
+        "Apatosaurus_Walk"
+      ],
+      "sourceActions": [
+        "Apatosaurus_Attack",
+        "Apatosaurus_Death",
+        "Apatosaurus_Idle",
+        "Apatosaurus_Jump",
+        "Apatosaurus_Run",
+        "Apatosaurus_Walk"
+      ],
+      "materialFixes": [
+        "Brown",
+        "Material",
+        "Black",
+        "LightBrown"
+      ],
+      "sha256": "a6e7fd1037204603c40d1d3b545145511c835dfa3d58e29e049d3c263b1b67a1",
+      "bytes": 418588
+    },
+    "Parasaurolophus": {
+      "file": "models/Parasaurolophus.glb",
+      "triangleCount": 1414,
+      "nativeWidthHeightDepth": [
+        1.9503475025843886,
+        5.9794722021868765,
+        12.481130593837438
+      ],
+      "sourceNativeWidthHeightDepth": [
+        1.9503475427627563,
+        5.9794716108590364,
+        12.481130123138428
+      ],
+      "height": 5.979473089695571,
+      "bounds": {
+        "min": [
+          -0.9751737713813782,
+          2.4318101310427664e-8,
+          -7.786004066467285
+        ],
+        "max": [
+          0.975173830986023,
+          5.979473114013672,
+          4.695125579833984
+        ]
+      },
+      "animations": [
+        "Parasaurolophus_Attack",
+        "Parasaurolophus_Death",
+        "Parasaurolophus_Idle",
+        "Parasaurolophus_Jump",
+        "Parasaurolophus_Run",
+        "Parasaurolophus_Walk"
+      ],
+      "sourceActions": [
+        "Parasaurolophus_Attack",
+        "Parasaurolophus_Death",
+        "Parasaurolophus_Idle",
+        "Parasaurolophus_Jump",
+        "Parasaurolophus_Run",
+        "Parasaurolophus_Walk"
+      ],
+      "materialFixes": [
+        "LightYellow",
+        "LightGreen",
+        "Green",
+        "Red"
+      ],
+      "sha256": "d2d6870dbe4156f938cfca4357060396f2855aa236fc2d436d272cd69a49805d",
+      "bytes": 342928
+    }
+  }
+}
