@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       approval:
-        description: 'Enter RUN2-APPROVED only after Tab B and Cameron approve exact files and Cameron authorises dispatch'
+        description: 'Enter RUN2B-APPROVED only after Tab B and Cameron approve exact files and Cameron authorises dispatch'
         required: true
         type: string
 permissions:
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   build:
-    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN2-APPROVED' && github.run_attempt == 1
+    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN2B-APPROVED' && github.run_attempt == 1
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
