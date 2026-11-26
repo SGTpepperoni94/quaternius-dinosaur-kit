@@ -1,19 +1,19 @@
-name: Dinosaur Kit Run 1B diagnostics only
+name: Dinosaur Kit Run 2 fix and verify
 on:
   workflow_dispatch:
     inputs:
       approval:
-        description: 'Enter RUN1B-APPROVED only after Tab B and Cameron approve the exact files'
+        description: 'Enter RUN2-APPROVED only after Tab B and Cameron approve exact files and Cameron authorises dispatch'
         required: true
         type: string
 permissions:
   contents: read
 concurrency:
-  group: dinosaur-kit-run1-diagnostic
+  group: dinosaur-kit-run2
   cancel-in-progress: false
 jobs:
-  diagnose:
-    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN1B-APPROVED' && github.run_attempt == 1
+  build:
+    if: github.ref == 'refs/heads/rc/dino-kit-v1' && inputs.approval == 'RUN2-APPROVED' && github.run_attempt == 1
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -23,31 +23,30 @@ jobs:
       - name: Record exact revision and setup
         run: |
           set -euo pipefail
-          mkdir -p diagnostics
+          mkdir -p diagnostics/models
           git rev-parse HEAD | tee diagnostics/commit.txt
           curl --fail --location --retry 3 https://download.blender.org/release/Blender4.2/blender-4.2.8-linux-x64.tar.xz -o "$RUNNER_TEMP/blender.tar.xz"
           mkdir -p "$RUNNER_TEMP/blender"
           tar -xJf "$RUNNER_TEMP/blender.tar.xz" --strip-components=1 -C "$RUNNER_TEMP/blender"
           "$RUNNER_TEMP/blender/blender" --version | tee diagnostics/blender-version.txt
+          grep -q '^Blender 4.2.8' diagnostics/blender-version.txt
       - name: Verify exact local source files and licence
         run: |
           set -euo pipefail
-          status=1
-          echo "$status" > "$GITHUB_WORKSPACE/diagnostics/download-status.txt"
-          cd "$GITHUB_WORKSPACE/sources"
-          ls -la | tee "$GITHUB_WORKSPACE/diagnostics/source-list.txt"
+          echo 1 > diagnostics/download-status.txt
+          cd sources
+          ls -la | tee ../diagnostics/source-list.txt
           test "$(wc -l < SHA256SUMS)" -eq 7
           sha256sum -c SHA256SUMS
           grep -q 'CC0 1.0' License.txt
-          echo 0 > "$GITHUB_WORKSPACE/diagnostics/download-status.txt"
-      - name: Diagnose every species in Blender
+          echo 0 > ../diagnostics/download-status.txt
+      - name: Export every species in Blender
         run: |
           set -euo pipefail
           status=0
           for name in TRex Triceratops Stegosaurus Velociraptor Apatosaurus Parasaurolophus; do
             mkdir -p "diagnostics/$name"
-            echo "=== $name ==="
-            if test -s "$GITHUB_WORKSPACE/sources/$name.blend" && "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$GITHUB_WORKSPACE/sources/$name.blend" --python-exit-code 1 --python scripts/diagnose_glb.py -- "diagnostics/$name" 2>&1 | tee "diagnostics/$name/blender.log"; then
+            if test -s "$GITHUB_WORKSPACE/sources/$name.blend" && "$RUNNER_TEMP/blender/blender" --background --disable-autoexec "$GITHUB_WORKSPACE/sources/$name.blend" --python-exit-code 1 --python scripts/export_glb.py -- "diagnostics/models/$name.glb" 2>&1 | tee "diagnostics/$name/blender.log"; then
               echo 0 > "diagnostics/$name/blender-status.txt"
             else
               echo 1 > "diagnostics/$name/blender-status.txt"
@@ -63,26 +62,42 @@ jobs:
           set -euo pipefail
           npm ci --ignore-scripts --no-audit --no-fund
           npx --no-install playwright-core install --with-deps chromium
-      - name: Diagnose GLBs in Three.js and Khronos validator
+      - name: Verify GLBs in Three.js and Khronos validator
         run: |
           set -euo pipefail
           status=0
-          node scripts/diagnose_runtime.mjs diagnostics 2>&1 | tee diagnostics/runtime.log || status=1
+          node scripts/verify_runtime.mjs diagnostics 2>&1 | tee diagnostics/runtime.log || status=1
           echo "$status" > diagnostics/runtime-status.txt
-      - name: Preserve raw diagnostic artifacts
+      - name: Recheck immutable sources
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p diagnostics
+          echo 1 > diagnostics/source-integrity-status.txt
+          git diff --exit-code HEAD -- sources/
+          test -z "$(git status --porcelain --untracked-files=all -- sources/)"
+          (cd sources && sha256sum -c SHA256SUMS) | tee diagnostics/source-integrity.txt
+          echo 0 > diagnostics/source-integrity-status.txt
+      - name: Copy verified source licence
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p diagnostics
+          cp sources/License.txt diagnostics/LICENSE.txt
+      - name: Preserve raw Run 2 artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: dinosaur-kit-run1b-diagnostics
+          name: dinosaur-kit-run2-results
           path: diagnostics/
           if-no-files-found: error
           retention-days: 14
-      # Expected to exit 1 if original assertion / raw bounds fail, after artifacts are preserved.
       - name: Consolidated failure gate
         if: always()
         run: |
           set -euo pipefail
-          for f in download-status blender-status runtime-status; do
+          for f in download-status blender-status runtime-status source-integrity-status; do
             test -f "diagnostics/$f.txt" && test "$(cat "diagnostics/$f.txt")" = 0 || exit 1
           done
-          test -f diagnostics/runtime.json
+          test -s diagnostics/runtime.json
+          test -s diagnostics/manifest.json
